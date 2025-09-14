@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mortgage Refinancing Savings Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Modal styling */
+.modal {
+  transition: opacity 0.25s ease;
+}
+.modal-active {
+  overflow-x: hidden;
+  overflow-y: visible !important;
+}
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div class="max-w-3xl mx-auto p-6 bg-white mt-10 rounded shadow-lg">
+  <h1 class="text-3xl font-bold text-center mb-6">Mortgage Refinancing Savings Calculator</h1>
+
+  <!-- Calculator Form -->
+  <form id="mortgageForm" class="space-y-4">
+    <div>
+      <label class="block font-medium mb-1">Current Mortgage Balance ($)</label>
+      <input type="number" id="balance" class="w-full p-2 border rounded" value="200000" min="0" required>
+    </div>
+    <div>
+      <label class="block font-medium mb-1">Current Interest Rate (%)</label>
+      <input type="number" id="currentRate" class="w-full p-2 border rounded" value="5" step="0.01" min="0" required>
+    </div>
+    <div>
+      <label class="block font-medium mb-1">New Interest Rate (%)</label>
+      <input type="number" id="newRate" class="w-full p-2 border rounded" value="3.5" step="0.01" min="0" required>
+    </div>
+    <div>
+      <label class="block font-medium mb-1">Remaining Term (years)</label>
+      <input type="number" id="term" class="w-full p-2 border rounded" value="25" min="1" required>
+    </div>
+    <div>
+      <label class="block font-medium mb-1">Refinancing Fees ($)</label>
+      <input type="number" id="fees" class="w-full p-2 border rounded" value="2000" min="0" required>
+    </div>
+    <button type="button" onclick="calculateSavings()" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700">Calculate Savings</button>
+  </form>
+
+  <!-- Results -->
+  <div id="results" class="mt-6 hidden">
+    <h2 class="text-2xl font-bold mb-2">Estimated Savings</h2>
+    <p class="mb-4">You could save <span id="savings" class="font-semibold text-green-600">$0</span> over the remaining term!</p>
+    <canvas id="savingsChart" class="mb-4"></canvas>
+    <button onclick="showProModal()" class="w-full bg-yellow-500 text-white p-3 rounded hover:bg-yellow-600">Export Detailed Report (Pro)</button>
+  </div>
+
+  <!-- Explanation -->
+  <div class="mt-6 bg-gray-50 p-4 rounded">
+    <h3 class="font-bold mb-2">How is this calculated?</h3>
+    <p>The calculator uses your current mortgage balance, current interest rate, new interest rate, and remaining term to estimate total payments and savings. Savings = Total payments on current mortgage - Total payments on new mortgage - refinancing fees.</p>
+  </div>
+</div>
+
+<!-- Freemium Modal -->
+<div class="modal fixed w-full h-full top-0 left-0 flex items-center justify-center opacity-0 pointer-events-none" id="proModal">
+  <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+  <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+    <div class="modal-content py-4 text-left px-6">
+      <h2 class="text-xl font-bold mb-4">Upgrade to Pro</h2>
+      <p class="mb-4">Unlock detailed reports and export your savings analysis. One-time payment of $19.99.</p>
+      <button onclick="closeProModal()" class="bg-red-500 text-white p-2 rounded mr-2 hover:bg-red-600">Close</button>
+      <a href="https://affiliate-link.example.com?tag=yourid" target="_blank" class="bg-green-600 text-white p-2 rounded hover:bg-green-700">Upgrade to Pro</a>
+    </div>
+  </div>
+</div>
+
+<script>
+let savingsChart;
+
+function calculateSavings() {
+  const balance = parseFloat(document.getElementById('balance').value);
+  const currentRate = parseFloat(document.getElementById('currentRate').value) / 100;
+  const newRate = parseFloat(document.getElementById('newRate').value) / 100;
+  const term = parseFloat(document.getElementById('term').value);
+  const fees = parseFloat(document.getElementById('fees').value);
+
+  // Monthly payments
+  const monthlyCurrent = (balance * currentRate/12) / (1 - Math.pow(1 + currentRate/12, -term*12));
+  const monthlyNew = (balance * newRate/12) / (1 - Math.pow(1 + newRate/12, -term*12));
+
+  // Total payments
+  const totalCurrent = monthlyCurrent * term * 12;
+  const totalNew = monthlyNew * term * 12 + fees;
+
+  const totalSavings = Math.max(0, totalCurrent - totalNew);
+
+  document.getElementById('savings').innerText = `$${totalSavings.toFixed(2)}`;
+  document.getElementById('results').classList.remove('hidden');
+
+  // Chart.js graph
+  const ctx = document.getElementById('savingsChart').getContext('2d');
+  if(savingsChart) savingsChart.destroy();
+  savingsChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Current Payments', 'New Payments + Fees', 'Estimated Savings'],
+      datasets: [{
+        label: 'Mortgage Breakdown',
+        data: [totalCurrent, totalNew, totalSavings],
+        backgroundColor: ['#FF6384','#36A2EB','#4BC0C0']
+      }]
+    }
+  });
+
+  // Show freemium modal after first calculation
+  setTimeout(showProModal, 1000);
+}
+
+function showProModal() {
+  const modal = document.getElementById('proModal');
+  modal.classList.add('modal-active');
+  modal.style.opacity = 1;
+  modal.style.pointerEvents = 'auto';
+}
+
+function closeProModal() {
+  const modal = document.getElementById('proModal');
+  modal.classList.remove('modal-active');
+  modal.style.opacity = 0;
+  modal.style.pointerEvents = 'none';
+}
+</script>
+
+</body>
+</html>
